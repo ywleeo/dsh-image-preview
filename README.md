@@ -76,6 +76,35 @@ pnpm remove dsh-image-preview
 
 并删除 `cordis.patch.yml` 里对应 insert。
 
+## 发布更新
+
+仓库内置两条脚本（`scripts/`）：
+
+### 本机开发时同步（不发布）
+
+`file:` 依赖的 node_modules 是拷贝/硬链接，改完源码后同步到所有已安装的 profile：
+
+```bash
+pnpm run sync
+```
+
+然后按改动类型生效：`index.js` → 重启 dsh web；`client.js` → 刷新页面。
+
+### 一键发布（提交 + 打 tag + 推送）
+
+```bash
+pnpm run release          # 递增 patch 版本（0.1.3 → 0.1.4）
+pnpm run release minor    # 递增 minor（0.1.4 → 0.2.0）
+pnpm run release major    # 递增 major（0.2.0 → 1.0.0）
+```
+
+脚本自动完成：升版本 → 同步本机拷贝 → `git commit` → `git tag vX.Y.Z` → `git push`。
+
+### 其它机器/重装后更新
+
+- 首次：`pnpm add github:ywleeo/dsh-image-preview#vX.Y.Z`（按 tag 安装，可复现）
+- 已安装：`pnpm update dsh-image-preview`（重新拉取默认分支最新代码）后重启 + 刷新
+
 ## 已知边界
 
 - 路径含 `(` `)` `[` `]` 等特殊字符时 markdown 链接语法可能破损（日常路径不受影响）。
