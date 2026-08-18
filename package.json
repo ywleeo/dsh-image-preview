@@ -1,0 +1,25 @@
+{
+  "name": "dsh-image-preview",
+  "version": "0.1.3",
+  "description": "在 dsh Web 对话正文中直接渲染本地图片路径的插件（host 改写路径 + 极简客户端拦截点击）",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "README.md",
+    "LICENSE"
+  ]
+}
