@@ -16,7 +16,9 @@
 
 ![dsh-image-preview 对话内联图片](assets/screenshots/preview.png)
 
-对话中本地视频路径自动内联为播放器（`<video controls>`，可拖动进度条，截图待补）。
+对话中本地视频路径自动内联为播放器（`<video controls>`，可拖动进度条）：
+
+![dsh-image-preview 对话内联视频](assets/screenshots/preview-video.png)
 
 ## 特性
 
