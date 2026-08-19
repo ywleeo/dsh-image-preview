@@ -7,6 +7,12 @@
 
 支持格式：`png / jpg / jpeg / webp / gif / svg / avif / bmp / ico`（单张上限 20MB，或附件服务的 `maxImageBytes`）。
 
+## 截图
+
+对话中本地图片路径自动内联为大图，图下附一行小字本地地址（点击用系统图片工具打开）：
+
+![dsh-image-preview 对话内联图片](assets/screenshots/preview.png)
+
 ## 特性
 
 - ✅ 本地图片路径 → 对话内联显示
