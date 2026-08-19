@@ -149,6 +149,10 @@ function scanMediaPathRanges(text) {
       start -= 1
       end += 1
     }
+    // 跳过已在 markdown 链接语法内的路径：链接文本 `[path](url)` 或链接 URL
+    // `[label](path)`。否则二次改写会把原有链接拼坏（如 `[path](openUrl)` 变成
+    // `[[▶ 播放视频](videoUrl)\n\n[path](openUrl)](openUrl)`）。
+    if (text[start - 1] === '[' || text[start - 1] === '(' || text[end] === ']') continue
     if (seen.has(path)) continue
     seen.add(path)
     found.push({ path, kind: mediaKind(path), rawStart: start, rawEnd: end })
