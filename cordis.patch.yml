@@ -1,0 +1,12 @@
+# dsh-image-preview bundle patch: mounts the media-inline rendering plugin into
+# a dsh web composition.
+#
+# Host half (index.js) wraps llm/stream to rewrite local image/video paths into
+# same-origin loopback URLs and serves the /image, /video (HTTP Range 206) and
+# /open routes; the client half (client.js) turns the "play video" link into a
+# <video controls> player, tightens spacing, and intercepts the open link.
+#
+# Installed with: dsh plugin --profile web add "github:ywleeo/dsh-image-preview#main"
+- insert:
+    - id: dsh-image-preview
+      name: dsh-image-preview

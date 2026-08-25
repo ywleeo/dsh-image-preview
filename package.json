@@ -8,9 +8,13 @@
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true
@@ -19,6 +23,7 @@
   "files": [
     "index.js",
     "client.js",
+    "cordis.patch.yml",
     "README.md",
     "LICENSE"
   ],
