@@ -74,6 +74,31 @@ pnpm add github:ywleeo/dsh-image-preview
 4. **打开**：`/open` 路由校验 token 后 spawn 系统默认应用，302 到对应媒体路由（无客户端时的降级展示）。
 5. **客户端**：`client.js` 注入 CSS（播放器样式 + 小字号 + 间距）、把「▶ 播放视频」链接替换成 `<video>` 播放器（MutationObserver 兜底），并拦截对 `/open` 链接的点击（preventDefault → fetch 触发本地打开）。
 
+### 文件分工与启动壳
+
+| 文件 | 作用 |
+|---|---|
+| `index.js` | **启动壳**。不 import 任何 dsh 核心模块，运行时动态加载 `host.js` 并挂成子插件；失败只丢功能，不影响 dsh 启动。 |
+| `host.js` | 上面第 1–4 条的全部逻辑（`llm/stream` 改写 + 三条路由）。 |
+| `client.js` | 上面第 5 条（样式、播放器、点击拦截）。 |
+
+为什么拆：dsh 的 loader 条目一旦激活失败，boot 的激活审计（`assertEntriesActivated`）会把整棵插件树判死、进程非零退出。本插件包装 `llm/stream`、注册三条路由，正是最容易挨核心升级刀的那一类，于是壳把会坏的部分挪出启动路径：
+
+- 壳不声明 `inject`，所以它的 loader 条目永远 `ACTIVE`，boot 审计永远通过；
+- `host.js` 自己的 `inject: ['webServer', 'fs']` 在子 fiber 上照常生效，服务没就绪就先挂起，就绪后自动激活；
+- `host.js` 导入失败、同步抛错、异步 reject，一律只记一条日志，插件停用，dsh 照常启动；
+- 子 fiber 挂在壳下面，壳被卸载时宿主逻辑照常回收。
+
+约束（改 `index.js` 前必读）：`package.json` 的 `main` 必须继续指向 `index.js`，loader 条目名必须继续是裸包名 `dsh-image-preview`。客户端那一半靠 `dsh.client` + `exports["./client"]` 从 loader 条目名反查包，条目名换成子路径会导致客户端半边再也不被扫描到。
+
+升级改坏 `host.js` 时的预期表现：dsh 正常启动，日志出现
+
+```
+[dsh-image-preview] host.js 加载失败，插件功能已停用，dsh 继续运行。原因：…
+```
+
+对话里的本地图片/视频路径不再内联，其余功能不受影响。照着日志改 `host.js` 即可，`index.js` 不用动。
+
 ## 设计边界
 
 - 只处理**助手回复的流式文本**（`llm/stream`），工具结果卡片里的路径文本不改写。
@@ -87,12 +112,18 @@ pnpm add github:ywleeo/dsh-image-preview
 改动后需同步到 profile 的 node_modules 拷贝（`file:` 依赖是拷贝/硬链接，编辑工具原子写入会断开硬链接）：
 
 ```bash
-cp index.js client.js ~/.dsh/profiles/web/node_modules/dsh-image-preview/
+bash scripts/sync.sh   # 或手动：cp index.js host.js client.js package.json ~/.dsh/profiles/web/node_modules/dsh-image-preview/
+```
+
+启动壳契约校验（无外部依赖）：
+
+```bash
+node test-shell.mjs    # host.js 坏掉时不抛、只报告
 ```
 
 生效方式：
 
-- `index.js`（host 逻辑）→ **重启 dsh web**
+- `index.js` / `host.js`（host 逻辑）→ **重启 dsh web**
 - `client.js`（样式/播放器/点击）→ **刷新浏览器页面**
 
 ## 卸载

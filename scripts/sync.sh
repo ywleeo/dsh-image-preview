@@ -7,7 +7,12 @@ cd "$(dirname "$0")/.."
 SYNCED=0
 for d in "$HOME/.dsh/profiles"/*/node_modules/dsh-image-preview; do
   [ -d "$d" ] || continue
-  cp index.js client.js package.json "$d/"
+  # host.js 是启动壳动态加载的真实插件，必须一起同步，否则壳会报导入失败。
+  # 先 rm 再 cp：目标可能是源的硬链接，就地覆盖会连带改掉另一头。
+  for f in index.js host.js client.js package.json; do
+    rm -f "$d/$f"
+    cp "$f" "$d/$f"
+  done
   echo "已同步: $d"
   SYNCED=1
 done
