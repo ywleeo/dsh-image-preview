@@ -115,6 +115,30 @@ export function apply(ctx) { globalThis.__shellProbeOk = true }
   check('子 fiber 异步失败时报告了原因', reports.some(r => r.includes('加载失败')))
 }
 
+// 6：报告链条自己也抛（logger 与 console 都炸）——不许漏出 unhandledRejection。
+// 回归护栏：dsh 在 apps/cli 装了 installFailLoud 且从不卸载，进程存活期间任何
+// unhandledRejection 都会 exit(1)；壳漏一个就等于白做。
+{
+  const dir = fixture('report-throw', undefined) // host.js 缺失，必走 report
+  const mod = await import('file://' + join(dir, 'index.js'))
+  const unhandled = []
+  const onUnhandled = (reason) => unhandled.push(reason)
+  process.on('unhandledRejection', onUnhandled)
+  const originalError = console.error
+  console.error = () => { throw new Error('console.error boom') }
+  const ctx = {
+    logger: { error: () => { throw new Error('logger boom') } },
+    plugin: () => ({ await: async () => {} }),
+  }
+  let threw
+  try { mod.apply(ctx) } catch (error) { threw = error }
+  await new Promise(r => setTimeout(r, 80))
+  console.error = originalError
+  process.off('unhandledRejection', onUnhandled)
+  check('报告链条自己抛错时，壳不抛', threw === undefined, String(threw))
+  check('报告链条自己抛错时，不留 unhandledRejection', unhandled.length === 0, unhandled.map(String).join(' | '))
+}
+
 rmSync(root, { recursive: true, force: true })
 
 if (failed > 0) {

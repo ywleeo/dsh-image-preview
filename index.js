@@ -15,6 +15,8 @@
  *     就绪后自动激活）。
  *  4. package.json 的 main 仍指向本文件，dsh.client 与 exports["./client"] 也
  *     不动——客户端那一半靠 loader 条目名去找包，路径不能变。
+ *  5. 壳里任何异步都不许漏出未处理的 rejection：dsh 在 apps/cli 装了
+ *     installFailLoud 且从不卸载，进程存活期间任何 unhandledRejection 都会 exit(1)。
  */
 
 export const name = 'dsh-image-preview'
@@ -24,20 +26,16 @@ const HOST = './host.js'
 
 /** 报告一次加载失败：插件停用，dsh 继续跑。这个函数自己不许抛。 */
 function report(ctx, error) {
-  const detail = error instanceof Error ? (error.stack ?? error.message) : String(error)
-  const line = '[dsh-image-preview] host.js 加载失败，插件功能已停用，dsh 继续运行。原因：' + detail
   try {
+    const detail = error instanceof Error ? (error.stack ?? error.message) : String(error)
+    const line = '[dsh-image-preview] host.js 加载失败，插件功能已停用，dsh 继续运行。原因：' + detail
     if (typeof ctx?.logger?.error === 'function') {
       ctx.logger.error('%s', line)
       return
     }
-  } catch {
-    // logger 不可用或自己炸了，退到 stderr
-  }
-  try {
     console.error(line)
   } catch {
-    // 连 stderr 都不可用也不能让壳变成新的启动故障点
+    // 报告本身失败也无所谓：绝不能因此变成新的启动故障点
   }
 }
 
@@ -46,7 +44,9 @@ function report(ctx, error) {
  * boot 不会等待这次动态导入。
  */
 export function apply(ctx) {
-  void mount(ctx)
+  // 最后一道兜底。mount 内部已逐段 try/catch，但报告链条在极端情况下仍可能抛；
+  // 漏出去就是 unhandledRejection，dsh 会因此 exit(1)。
+  void mount(ctx).catch(() => {})
 }
 
 /** 动态加载 host.js 并挂成子插件；任何失败只报告，不向外抛。 */
