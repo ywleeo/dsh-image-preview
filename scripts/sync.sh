@@ -8,8 +8,10 @@ SYNCED=0
 for d in "$HOME/.dsh/profiles"/*/node_modules/dsh-image-preview; do
   [ -d "$d" ] || continue
   # host.js 是启动壳动态加载的真实插件，必须一起同步，否则壳会报导入失败。
+  # cordis.patch.yml 是 package.json 里 dsh.bundle.patch 指向的清单，插件页要读它；
+  # 少了它插件 list 会报 "failed to read overlay ... ENOENT"。
   # 先 rm 再 cp：目标可能是源的硬链接，就地覆盖会连带改掉另一头。
-  for f in index.js host.js client.js package.json; do
+  for f in index.js host.js client.js package.json cordis.patch.yml; do
     rm -f "$d/$f"
     cp "$f" "$d/$f"
   done
